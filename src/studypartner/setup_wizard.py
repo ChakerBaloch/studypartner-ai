@@ -63,10 +63,20 @@ def run_wizard():
     # Step 3: Preferences
     console.print("\n[bold]Step 3/4: Preferences[/bold]")
 
-    config.default_pomodoro_minutes = int(Prompt.ask(
-        "Default Pomodoro length (minutes)",
-        default=str(config.default_pomodoro_minutes),
-    ))
+    while True:
+        raw = Prompt.ask(
+            "Default Pomodoro length (minutes)",
+            default=str(config.default_pomodoro_minutes),
+        )
+        try:
+            val = int(raw)
+            if 5 <= val <= 180:
+                config.default_pomodoro_minutes = val
+                break
+            else:
+                console.print("[yellow]Please enter a number between 5 and 180.[/yellow]")
+        except ValueError:
+            console.print(f"[yellow]'{raw}' is not a number. Please enter minutes (e.g. 45).[/yellow]")
 
     config.enable_voice_coaching = Confirm.ask(
         "Enable voice coaching?",
