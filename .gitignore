@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.gemini/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ==============================
+# PRIVATE PLANNING DOCS — DO NOT PUSH
+# These contain internal strategy, architecture notes, and study materials.
+# ==============================
+architecture.md
+product_plan.md
+hackathon_strategy.md
+hackathon_brief.md
+study_guide.md
+
+# ==============================
+# SECRETS & ENVIRONMENT — DO NOT PUSH
+# ==============================
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+config.json
+# Local StudyPartner data (user sessions, profiles, screenshots)
+.studypartner/
+data/
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Build artifacts
+*.whl
