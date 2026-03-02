@@ -1,73 +1,43 @@
-"""Native macOS notification nudges via pyobjc."""
+"""macOS native notification delivery for coaching nudges."""
 
 from __future__ import annotations
 
 import logging
+import subprocess
 from typing import Optional
 
 logger = logging.getLogger(__name__)
 
+# Emoji map for nudge types
+NUDGE_ICONS = {
+    "recall_prompt": "🧠",
+    "phase_transition": "🔄",
+    "anti_pattern": "⚠️",
+    "time_based": "⏰",
+    "encouragement": "🌟",
+    "technique_tip": "📚",
+}
+
 
 def send_notification(
     title: str,
-    message: str,
+    body: str,
     subtitle: Optional[str] = None,
-    sound: bool = True,
+    sound: str = "Glass",
 ) -> bool:
-    """Send a macOS native notification.
+    """Send a native macOS notification using osascript.
 
-    Uses NSUserNotification (legacy) or UNUserNotificationCenter.
-    Falls back to osascript if pyobjc is unavailable.
+    Uses the display notification AppleScript command for reliable delivery
+    with beautiful native notifications.
     """
-    try:
-        return _send_with_pyobjc(title, message, subtitle, sound)
-    except ImportError:
-        return _send_with_osascript(title, message, subtitle, sound)
-    except Exception as e:
-        logger.error(f"pyobjc notification failed: {e}")
-        return _send_with_osascript(title, message, subtitle, sound)
-
-
-def _send_with_pyobjc(
-    title: str,
-    message: str,
-    subtitle: Optional[str],
-    sound: bool,
-) -> bool:
-    """Send notification using pyobjc NSUserNotification."""
-    from Foundation import NSUserNotification, NSUserNotificationCenter
-
-    notification = NSUserNotification.alloc().init()
-    notification.setTitle_(title)
-    notification.setInformativeText_(message)
+    # Build the AppleScript
+    script_parts = [f'display notification "{_escape(body)}"']
+    script_parts.append(f'with title "{_escape(title)}"')
     if subtitle:
-        notification.setSubtitle_(subtitle)
-    if sound:
-        notification.setSoundName_("default")
+        script_parts.append(f'subtitle "{_escape(subtitle)}"')
+    script_parts.append(f'sound name "{sound}"')
 
-    center = NSUserNotificationCenter.defaultUserNotificationCenter()
-    center.deliverNotification_(notification)
-
-    logger.info(f"Sent notification: {title}")
-    return True
-
-
-def _send_with_osascript(
-    title: str,
-    message: str,
-    subtitle: Optional[str],
-    sound: bool,
-) -> bool:
-    """Fallback: send notification using osascript."""
-    import subprocess
-
-    subtitle_part = f'subtitle "{subtitle}"' if subtitle else ""
-    sound_part = 'sound name "default"' if sound else ""
-
-    script = (
-        f'display notification "{message}" '
-        f'with title "{title}" {subtitle_part} {sound_part}'
-    )
+    script = " ".join(script_parts)
 
     try:
         subprocess.run(
@@ -75,10 +45,13 @@ def _send_with_osascript(
             capture_output=True,
             timeout=5,
         )
-        logger.info(f"Sent notification via osascript: {title}")
+        logger.info("🔔 Notification sent: %s — %s", title, body[:50])
         return True
+    except subprocess.TimeoutExpired:
+        logger.warning("Notification timed out")
+        return False
     except Exception as e:
-        logger.error(f"osascript notification failed: {e}")
+        logger.error("Failed to send notification: %s", e)
         return False
 
 
@@ -86,22 +59,46 @@ def send_coaching_nudge(
     nudge_type: str,
     message: str,
     technique: Optional[str] = None,
-):
-    """Send a coaching nudge as a native notification.
+) -> bool:
+    """Send a coaching nudge as a styled macOS notification.
 
-    Maps nudge types to emoji headers.
+    Uses rich formatting with appropriate emoji and sound based on
+    the nudge type.
     """
-    emoji_map = {
-        "time_based": "⏰",
-        "phase_transition": "🔄",
-        "anti_pattern": "⚠️",
-        "recall_prompt": "🎯",
-        "progress": "📊",
-        "scheduled_review": "🗓️",
-    }
+    icon = NUDGE_ICONS.get(nudge_type, "💡")
 
-    emoji = emoji_map.get(nudge_type, "🧠")
-    title = f"{emoji} StudyPartner"
-    subtitle = technique.replace("_", " ").title() if technique else None
+    # Choose sound based on nudge type
+    if nudge_type == "time_based":
+        sound = "Purr"       # Gentle for break reminders
+    elif nudge_type == "anti_pattern":
+        sound = "Basso"      # Attention-getting for warnings
+    elif nudge_type == "encouragement":
+        sound = "Hero"       # Celebratory
+    else:
+        sound = "Glass"      # Default pleasant sound
 
-    send_notification(title, message, subtitle=subtitle)
+    # Format the title
+    title = f"{icon} StudyPartner"
+
+    # Format subtitle with technique name if available
+    subtitle = None
+    if technique:
+        technique_labels = {
+            "feynman": "Feynman Technique",
+            "brain_dump": "Brain Dump",
+            "retrieval_practice": "Retrieval Practice",
+            "interleaving": "Interleaving",
+            "dual_coding": "Dual Coding",
+            "worked_example": "Worked Example",
+            "break": "Take a Break",
+            "ai_as_tutor": "AI as Tutor",
+        }
+        subtitle = technique_labels.get(technique, technique.replace("_", " ").title())
+
+    logger.info("💡 Coaching nudge [%s]: %s", nudge_type, message[:60])
+    return send_notification(title, message, subtitle=subtitle, sound=sound)
+
+
+def _escape(text: str) -> str:
+    """Escape text for AppleScript strings."""
+    return text.replace("\\", "\\\\").replace('"', '\\"').replace("\n", " ")

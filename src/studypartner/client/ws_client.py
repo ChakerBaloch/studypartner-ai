@@ -1,69 +1,118 @@
-"""WebSocket client for communicating with the Cloud Run backend."""
+"""WebSocket/HTTP client for communicating with the Cloud Run backend."""
 
 from __future__ import annotations
 
 import base64
+import json
 import logging
-from typing import Optional
-
-import httpx
+import time
 
 from studypartner.client.config import Config
-from studypartner.shared.models import ContextPacket, ScreenshotAnalysis
+from studypartner.shared.models import (
+    CoachingNudge,
+    DetectedActivity,
+    NudgeType,
+    ScreenshotAnalysis,
+    StudyPhase,
+)
 
 logger = logging.getLogger(__name__)
 
 
 async def analyze_screenshot(
     jpeg_bytes: bytes,
-    context: ContextPacket,
+    context: dict,
     config: Config,
-) -> Optional[ScreenshotAnalysis]:
-    """Send a screenshot to the Cloud Run backend for Gemini analysis.
+) -> ScreenshotAnalysis | None:
+    """Send screenshot to the Cloud Run backend and return analysis.
 
-    Uses the REST endpoint for one-shot analysis.
+    Uses REST endpoint POST /api/analyze-screenshot.
     """
+    import httpx
+
     if not config.backend_url:
-        logger.error("No backend URL configured. Run 'studypartner setup' first.")
+        logger.error("❌ No backend URL configured. Run 'studypartner setup' first.")
         return None
 
     url = f"{config.backend_url}/api/analyze-screenshot"
-
-    # Encode screenshot as base64 for JSON transport
-    screenshot_b64 = base64.b64encode(jpeg_bytes).decode("utf-8")
-
     payload = {
-        "screenshot_b64": screenshot_b64,
-        "context": context.model_dump(mode="json"),
+        "screenshot_b64": base64.b64encode(jpeg_bytes).decode(),
+        "context": context,
     }
 
+    logger.info("☁️  POST %s", url)
+    logger.debug("   Payload size: %.1f KB (screenshot) + context",
+                  len(jpeg_bytes) / 1024)
+
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        start = time.monotonic()
+
+        async with httpx.AsyncClient(timeout=30) as client:
             response = await client.post(url, json=payload)
-            response.raise_for_status()
+            elapsed_ms = (time.monotonic() - start) * 1000
+
+            logger.info("☁️  Response: %d in %.0fms", response.status_code, elapsed_ms)
+
+            if response.status_code != 200:
+                logger.error("❌ Backend returned %d: %s",
+                              response.status_code, response.text[:200])
+                return None
 
             data = response.json()
-            return ScreenshotAnalysis(**data)
+            logger.debug("   Raw response: %s", json.dumps(data, indent=2)[:500])
 
-    except httpx.ConnectError:
-        logger.error(f"Cannot connect to backend at {config.backend_url}")
+            return _parse_analysis(data)
+
+    except httpx.ConnectError as e:
+        logger.error("❌ Cannot connect to backend: %s", e)
+        logger.error("   Is the backend deployed? Check: curl %s/api/health", config.backend_url)
         return None
     except httpx.TimeoutException:
-        logger.error("Backend request timed out")
+        logger.error("❌ Backend request timed out (30s)")
         return None
     except Exception as e:
-        logger.error(f"Backend request failed: {e}")
+        logger.error("❌ Backend request failed: %s", e, exc_info=True)
         return None
 
 
-async def health_check(config: Config) -> bool:
-    """Check if the backend is reachable."""
-    if not config.backend_url:
-        return False
-
+def _parse_analysis(data: dict) -> ScreenshotAnalysis | None:
+    """Parse the backend response into a ScreenshotAnalysis."""
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            response = await client.get(f"{config.backend_url}/api/health")
-            return response.status_code == 200
-    except Exception:
-        return False
+        # Parse detected activity
+        activity_str = data.get("detected_activity", "other")
+        try:
+            activity = DetectedActivity(activity_str)
+        except ValueError:
+            activity = DetectedActivity.OTHER
+
+        # Parse study phase
+        phase_str = data.get("study_phase", "unknown")
+        try:
+            phase = StudyPhase(phase_str)
+        except ValueError:
+            phase = StudyPhase.UNKNOWN
+
+        # Parse coaching nudge
+        nudge = None
+        nudge_data = data.get("coaching_nudge")
+        if nudge_data and isinstance(nudge_data, dict):
+            try:
+                nudge = CoachingNudge(
+                    nudge_type=NudgeType(nudge_data.get("nudge_type", "recall_prompt")),
+                    message=nudge_data.get("message", ""),
+                    technique=nudge_data.get("technique"),
+                )
+            except (ValueError, KeyError):
+                pass
+
+        return ScreenshotAnalysis(
+            detected_activity=activity,
+            detected_topic=data.get("detected_topic"),
+            study_phase=phase,
+            coaching_nudge=nudge,
+            raw_response=data.get("raw_response", ""),
+        )
+
+    except Exception as e:
+        logger.error("Failed to parse analysis response: %s", e)
+        return None

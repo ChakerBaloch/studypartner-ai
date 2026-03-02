@@ -15,20 +15,12 @@ console = Console()
 @app.command()
 def start(
     topic: str = typer.Option(None, "--topic", "-t", help="Topic you're studying"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed debug logs"),
 ):
     """Start a study session. The AI tutor will observe your screen and coach you."""
     from studypartner.client.session import start_session
 
-    console.print(
-        Panel(
-            "[bold green]StudyPartner AI[/bold green]\n"
-            "Starting study session...\n"
-            f"Topic: {topic or 'Auto-detect from screen'}",
-            title="🧠 Study Session",
-            border_style="green",
-        )
-    )
-    start_session(topic=topic)
+    start_session(topic=topic, verbose=verbose)
 
 
 @app.command()
@@ -132,6 +124,63 @@ def reset(
         console.print("[green]All data wiped.[/green]")
     else:
         console.print("[dim]Cancelled.[/dim]")
+
+
+@app.command()
+def logs(
+    lines: int = typer.Option(50, "--lines", "-n", help="Number of lines to show"),
+    follow: bool = typer.Option(False, "--follow", "-f", help="Follow new log entries"),
+):
+    """View StudyPartner log files."""
+    from studypartner.client.logging_config import get_log_path
+    from studypartner.shared.constants import LOGS_DIR
+
+    log_file = get_log_path()
+
+    if not log_file.exists():
+        console.print("[dim]No log file yet. Start a session first.[/dim]")
+        console.print(f"[dim]Log directory: {LOGS_DIR}[/dim]")
+        return
+
+    console.print(f"[dim]📁 Log file: {log_file}[/dim]\n")
+
+    if follow:
+        import subprocess
+        subprocess.run(["tail", "-f", str(log_file)])
+    else:
+        # Show last N lines
+        content = log_file.read_text()
+        log_lines = content.strip().split("\n")
+        for line in log_lines[-lines:]:
+            console.print(line)
+
+
+@app.command()
+def files():
+    """Show where StudyPartner stores files on your computer."""
+    from studypartner.shared.constants import DATA_DIR, DB_PATH, LOGS_DIR, SCREENSHOTS_DIR
+
+    from rich.table import Table
+
+    table = Table(title="📁 StudyPartner File Locations", border_style="blue")
+    table.add_column("What", style="cyan")
+    table.add_column("Path", style="dim")
+    table.add_column("Exists", style="green")
+
+    locations = [
+        ("Data directory", DATA_DIR),
+        ("Database", DB_PATH),
+        ("Screenshots", SCREENSHOTS_DIR),
+        ("Log files", LOGS_DIR),
+        ("Config", DATA_DIR / "config.json"),
+        ("Learning profile", DATA_DIR / "learning_profile.json"),
+    ]
+
+    for name, path in locations:
+        exists = "✅" if path.exists() else "—"
+        table.add_row(name, str(path), exists)
+
+    console.print(table)
 
 
 if __name__ == "__main__":
