@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import threading
-from typing import Callable, Optional
+from typing import Callable
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,6 @@ class MenuBarAgent:
         """Run the macOS event loop for the menu bar."""
         try:
             import AppKit
-            import objc
 
             # Create the application (don't show in Dock)
             self._app = AppKit.NSApplication.sharedApplication()

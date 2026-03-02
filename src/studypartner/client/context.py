@@ -7,11 +7,7 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from studypartner.client.database import get_active_session, get_db
-from studypartner.shared.constants import (
-    ADAPTIVE_PROFILE_PATH,
-    LEARNING_PROFILE_PATH,
-)
+from studypartner.client.database import get_db
 from studypartner.shared.models import (
     AdaptiveWeights,
     ContextPacket,
@@ -50,7 +46,7 @@ def _load_adaptive_weights() -> AdaptiveWeights:
 
         weights = AdaptiveWeights()
         for row in rows:
-            key, value, confidence = row["key"], row["value"], row["confidence"]
+            key, value, _confidence = row["key"], row["value"], row["confidence"]
             if key == "optimal_session_length_min":
                 weights.optimal_session_length_min = int(value)
             elif key == "nudge_delay_start_min":

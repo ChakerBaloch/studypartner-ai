@@ -6,10 +6,6 @@ import logging
 from dataclasses import dataclass
 from typing import Optional
 
-from studypartner.shared.constants import (
-    AI_CHAT_KEYWORDS,
-    CODING_KEYWORDS,
-)
 from studypartner.shared.models import (
     AdaptiveWeights,
     DetectedActivity,

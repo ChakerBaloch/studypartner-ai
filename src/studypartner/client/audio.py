@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import asyncio
 import io
 import logging
 import queue
-import struct
 import threading
 import wave
 from typing import Optional

@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-import json
 import logging
-from collections import defaultdict
 from datetime import datetime
 from typing import Optional
 
 from studypartner.client.database import get_db
-from studypartner.shared.constants import CONFIDENCE_THRESHOLD, MIN_EVIDENCE_FOR_PREFERENCE
-from studypartner.shared.models import AdaptiveWeights
+from studypartner.shared.constants import MIN_EVIDENCE_FOR_PREFERENCE
 
 logger = logging.getLogger(__name__)
 

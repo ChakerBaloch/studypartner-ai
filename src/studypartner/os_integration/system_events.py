@@ -78,7 +78,6 @@ class SystemEventWatcher:
     def handleAppActivate_(self, notification):
         """Handle app activation — use as context clue."""
         try:
-            import AppKit
 
             app_info = notification.userInfo()
             app_name = app_info.get("NSWorkspaceApplicationKey").localizedName()

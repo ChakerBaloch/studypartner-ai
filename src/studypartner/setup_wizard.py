@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import subprocess
-import sys
 
 from rich.console import Console
 from rich.panel import Panel

@@ -1,5 +1,8 @@
 """Constants and thresholds for StudyPartner."""
 
+import os
+from pathlib import Path
+
 # --- Study Phase Thresholds ---
 DEFAULT_POMODORO_MINUTES = 45
 DEFAULT_BREAK_MINUTES = 10
@@ -13,9 +16,7 @@ SCREENSHOT_WIDTH = 1280
 SCREENSHOT_HEIGHT = 720
 SCREENSHOT_JPEG_QUALITY = 70
 
-# --- Paths ---
-import os
-from pathlib import Path
+
 
 DATA_DIR = Path(os.path.expanduser("~/.studypartner"))
 DB_PATH = DATA_DIR / "studypartner.db"

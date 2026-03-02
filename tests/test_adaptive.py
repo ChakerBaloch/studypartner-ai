@@ -3,7 +3,6 @@
 import os
 import sys
 import tempfile
-from unittest.mock import patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
@@ -39,7 +38,7 @@ class TestAdaptiveEngine:
     def test_engine_initializes_defaults(self):
         """Adaptive engine should create default profile entries."""
         from studypartner.client.adaptive import AdaptiveEngine
-        engine = AdaptiveEngine()
+        _engine = AdaptiveEngine()  # noqa: F841 - side-effect: creates defaults
 
         with get_db() as conn:
             rows = conn.execute("SELECT * FROM adaptive_profile").fetchall()

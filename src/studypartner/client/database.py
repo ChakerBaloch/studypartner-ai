@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 from contextlib import contextmanager
-from datetime import datetime, timedelta
-from pathlib import Path
+from datetime import datetime
 from typing import Optional
 
 from studypartner.shared.constants import DATA_DIR, DB_PATH

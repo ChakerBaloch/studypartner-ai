@@ -64,7 +64,6 @@ def setup():
 def deploy():
     """Deploy the Cloud Run backend to your GCP project."""
     import subprocess
-    import sys
     from pathlib import Path
 
     deploy_script = Path(__file__).parent.parent.parent / "deploy.sh"

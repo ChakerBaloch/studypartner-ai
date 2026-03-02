@@ -82,7 +82,6 @@ class NotificationManager:
         """Send an interactive coaching notification."""
         try:
             import UserNotifications as UN
-            import Foundation
 
             content = UN.UNMutableNotificationContent.alloc().init()
             content.setTitle_(title)

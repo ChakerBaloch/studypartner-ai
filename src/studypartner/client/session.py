@@ -6,7 +6,6 @@ import asyncio
 import logging
 import signal
 import time
-from datetime import datetime
 from typing import Optional
 
 from rich.console import Console

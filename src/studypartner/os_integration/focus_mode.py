@@ -68,7 +68,7 @@ class FocusModeWatcher:
             import Foundation
 
             workspace = AppKit.NSWorkspace.sharedWorkspace()
-            center = workspace.notificationCenter()
+            workspace.notificationCenter()  # Ensure center is active
 
             # Watch for DND state changes in DistributedNotificationCenter
             dist_center = Foundation.NSDistributedNotificationCenter.defaultCenter()

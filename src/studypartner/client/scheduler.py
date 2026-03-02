@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime, timedelta
-from typing import Optional
+from datetime import date, timedelta
 
 from studypartner.client.database import get_db
 
