@@ -2,19 +2,22 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install only server dependencies
+# Copy full source for proper package installation
 COPY pyproject.toml .
-COPY src/studypartner/server/ src/studypartner/server/
-COPY src/studypartner/shared/ src/studypartner/shared/
-COPY src/studypartner/__init__.py src/studypartner/__init__.py
+COPY src/ src/
 
-# Install minimal dependencies for the server (no pyobjc — macOS only)
+# Install the package (server-only deps, no pyobjc)
 RUN pip install --no-cache-dir \
     fastapi>=0.110 \
     uvicorn[standard]>=0.27 \
     google-genai>=1.0 \
+    google-adk>=1.0 \
     pydantic>=2.0 \
-    python-multipart>=0.0.9
+    python-multipart>=0.0.9 \
+    websockets>=12.0
+
+# Install the package itself so module imports work
+ENV PYTHONPATH=/app/src
 
 EXPOSE 8080
 
