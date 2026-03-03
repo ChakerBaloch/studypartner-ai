@@ -35,9 +35,18 @@ async def analyze_screenshot(
         return None
 
     url = f"{config.backend_url}/api/analyze-screenshot"
+
+    # Serialize context — it may be a Pydantic model or a dict
+    if hasattr(context, "model_dump"):
+        context_dict = context.model_dump(mode="json")
+    elif hasattr(context, "dict"):
+        context_dict = context.dict()
+    else:
+        context_dict = context
+
     payload = {
         "screenshot_b64": base64.b64encode(jpeg_bytes).decode(),
-        "context": context,
+        "context": context_dict,
     }
 
     logger.info("☁️  POST %s", url)
